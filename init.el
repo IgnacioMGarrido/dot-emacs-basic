@@ -8,8 +8,6 @@
                        (emacs-init-time "%.2f")
                        gcs-done)))
 
-(require 'server)
-
 ;;; PACKAGE
 
 (require 'package)
@@ -24,6 +22,31 @@
 ;;; Don't add custom setting here
 (setq custom-file "~/.emacs.d/emacs-custom.el")
 (load custom-file t)
+
+
+;;; coding 
+
+(require 'cc-mode)
+
+(setq auto-mode-alist
+      (append
+       '(("\\.cpp$"     . c++-mode)
+         ("\\.hpp$"     . c++-mode)
+         ("\\.c$"       . c++-mode)
+         ("\\.h$"       . c++-mode)
+	 ("\\.inl$"     . c++-mode)
+         ("\\.emacs$"   . emacs-lisp-mode)
+	 ("\\.claradb$" . js-mode)
+         ("\\.txt$"     . indented-text-mode)
+	 ("\\.ts$"      . typescript-mode)
+	 ("\\.rml$"     . poly-rml-mode)
+	 ("\\.rcss$"    . css-mode)
+	 ("\\.lua$"     . lua-mode))
+       auto-mode-alist))
+
+(add-to-list 'auto-mode-alist '(".*\\(prj\\|premake\\).*\\.lua$" . indented-text-mode))
+
+(ido-mode)
 
 ;;; Interface tweaks
 (menu-bar-mode 0)
