@@ -1,0 +1,8 @@
+.Trash/
+auto-save-list/
+.cache/
+emacs-custom.el
+elpa/
+transient/
+eln-cache
+server/
