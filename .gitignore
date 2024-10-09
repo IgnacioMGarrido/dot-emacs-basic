@@ -1,6 +1,8 @@
 .Trash/
+projects
 ido*
 packages/
+autosave/
 auto-save-list/
 .cache/
 emacs-custom.el
