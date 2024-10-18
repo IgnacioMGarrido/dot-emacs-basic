@@ -13,14 +13,18 @@
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (package-initialize)
 
+;;; THEMES
+;;(load-theme 'modus-vivendi t)
+(use-package doom-themes
+  :ensure t
+  :config
+  (load-theme 'doom-one))
+
 ;;; FONTS
 (defun nm/get-default-font()
     "Consolas-13")
 (add-to-list 'default-frame-alist `(font . ,(nm/get-default-font)))
 (set-face-attribute 'default nil :height 110)
-
-;;; THEMES
-(load-theme 'modus-vivendi t)
 
 ;;; Don't add custom setting here
 (setq custom-file "~/.emacs.d/emacs-custom.el")
@@ -82,8 +86,8 @@
 
 (setq-default inhibit-splash-screen t
               make-backup-files nil
-              tab-with 4
-              indent-tabs-mode nil
+              ;;tab-with 4
+              ;;indent-tabs-mode nil
               compilation-scroll-output t
               visible-bell t
               initial-scratch-message nil
@@ -142,6 +146,9 @@
   (yas-global-mode 1))
 
 ;;; evil mode
+;; use capslock as escape
+(define-key key-translation-map (kbd "<capslock>") (kbd "<escape>"))
+
 (use-package evil
   :ensure t
   :init
@@ -221,17 +228,19 @@
 
 (use-package rainbow-delimiters
   :ensure t
-  :hook ((lisp-mode . rainbow-delimiters-mode))
-  :config
-  (custom-set-faces
-   '(rainbow-delimiters-depth-1-face ((t (:foreground "red"))))
-   '(rainbow-delimiters-depth-2-face ((t (:foreground "orange"))))
-   '(rainbow-delimiters-depth-3-face ((t (:foreground "dark green"))))
-   '(rainbow-delimiters-depth-4-face ((t (:foreground "blue"))))
-   '(rainbow-delimiters-depth-5-face ((t (:foreground "violet"))))
-   '(rainbow-delimiters-depth-6-face ((t (:foreground "coral"))))
-   '(rainbow-delimiters-depth-7-face ((t (:foreground "spring green"))))
-   '(rainbow-delimiters-depth-8-face ((t (:foreground "siennal"))))))
+  :hook ((lisp-mode . rainbow-delimiters-mode)
+         (c++-mode . rainbow-delimiters-mode))
+  ;; :config
+  ;; (custom-set-faces
+  ;;  '(rainbow-delimiters-depth-1-face ((t (:foreground "red"))))
+  ;;  '(rainbow-delimiters-depth-2-face ((t (:foreground "orange"))))
+  ;;  '(rainbow-delimiters-depth-3-face ((t (:foreground "dark green"))))
+  ;;  '(rainbow-delimiters-depth-4-face ((t (:foreground "blue"))))
+  ;;  '(rainbow-delimiters-depth-5-face ((t (:foreground "violet"))))
+  ;;  '(rainbow-delimiters-depth-6-face ((t (:foreground "coral"))))
+  ;;  '(rainbow-delimiters-depth-7-face ((t (:foreground "spring green"))))
+  ;;  '(rainbow-delimiters-depth-8-face ((t (:foreground "siennal")))))
+  )
 
 ;;Eglot
 
@@ -253,7 +262,7 @@
   :config
   (setq company-idle-delay 0.0
         company-minimum-prefix-length 2)
-   (setq company-backends '((company-capf)))) 
+   (setq company-backends '((company-capf))))
 
 ;;; clang-format
 
@@ -284,9 +293,9 @@
           (cond
            ((string-match-p "^[0-9]+$" value)
             (setq value (string-to-number value)))
-           ((string= value "true") ;; Si es "true"
+           ((string= value "true")
             (setq value t))
-           ((string= value "false") ;; Si es "false"
+           ((string= value "false")
             (setq value nil)))
           (setq options (cons (cons key value) options)))))
     options))
@@ -303,17 +312,32 @@
           (let ((indent-width (cdr (assq 'IndentWidth clang-format-options)))
                 (use-tab (cdr (assq 'UseTab clang-format-options)))
                 (tab-width (cdr (assq 'TabWidth clang-format-options))))
-            ;; Asegurarse de que los valores sean enteros
-            (setq c-basic-offset (if (integerp indent-width) indent-width 4)) ;; Valor por defecto
-            (setq indent-tabs-mode (if use-tab t nil)) ;; Usar tabulaciones o espacios
-            (setq tab-width (if (integerp tab-width) tab-width 4)) ;; Valor por defecto
-            (setq c++-tab-always-indent t)  ;; Indentar siempre con tabulaciones
+            (setq c-basic-offset (if (integerp indent-width) indent-width 4))
+            (setq indent-tabs-mode (if use-tab t nil))
+            (setq tab-width (if (integerp tab-width) tab-width 4))
+            (setq c++-tab-always-indent 'complete)
             (message "Applied .clang-format settings: IndentWidth=%d, UseTab=%s, TabWidth=%d"
                      c-basic-offset
                      indent-tabs-mode
                      tab-width)))))))
 (add-hook 'c++-mode-hook 'set-clang-format-style-from-file)
 (add-hook 'c-mode-hook 'set-clang-format-style-from-file)
+(add-hook 'c++-mode-hook (lambda()
+                        (setq c-set-style "k&r")
+                        (setq electric-indent-mode -1)
+                        (c-set-offset 'substatement-open 0)))
+;;; AVY
+
+(use-package avy
+  :ensure t
+  :bind
+  (("M-g f" . avy-goto-char)
+   ("M-j" . avy-goto-char-timer)
+   ("M-g w" . avy-goto-word-1)
+   ("M-g l" . avy-goto-line))
+  :config
+  (setq avy-background t))
+
 ;;; WINUM
 
 (use-package winum
@@ -333,10 +357,18 @@
   (winum-mode))
 
 (winner-mode t)
+
 ;;; FLYCHECK
 
 (use-package flycheck
-  :ensure t)
+  :ensure t
+  :init
+  (global-flycheck-mode)
+  :config
+  (setq flycheck-check-syntax-automatically '(mode-enabled save))
+  (setq flycheck-idle-change-delay 2)
+  (setq flycheck-clang-args '("-std=c++17"))
+  (setq flycheck-gcc-language-standard "c++17"))
 
 ;;; coding 
 
@@ -376,3 +408,4 @@
 (global-set-key (kbd "C-l") 'ibuffer)
 
 (global-set-key (kbd "C-q") 'kill-this-buffer)
+
