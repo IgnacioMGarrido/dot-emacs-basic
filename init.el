@@ -38,6 +38,7 @@
 ;;; FONTS
 (defun nm/get-default-font()
     "Iosevka NF")
+;;  "JetBrainsMono")
 (add-to-list 'default-frame-alist `(font . ,(nm/get-default-font)))
 (set-face-attribute 'default nil :height 110)
 
@@ -209,8 +210,6 @@
   :after vertico
   :config (vertico-posframe-mode 1))
 
-(setq vertico-posframe-poshandler #'posframe-poshandler-frame-top-center)
-
 (use-package marginalia
   :ensure t
   :config
@@ -230,7 +229,38 @@
 (use-package which-key
   :ensure t)
 
-;;; treemacs
+;;; Interface tweaks
+
+;; Set minibuffer on the top
+(setq vertico-posframe-poshandler #'posframe-poshandler-frame-top-center)
+
+(defun my-vertico-buffer-list ()
+  "Display a floating buffer list using Vertico."
+  (interactive)
+  (let ((buffers (mapcar 'buffer-name (buffer-list))))
+    (when buffers
+      (let ((selected (completing-read "Buffers: " buffers)))
+        (switch-to-buffer selected)))))
+
+(defun my-vertico-project-buffer-list ()
+  "Display a floating buffer list using Vertico, showing only buffers from the current project, including the compilation buffer if it exists."
+  (interactive)
+  (let* ((project-root (project-root (project-current t)))
+         (buffers (cl-remove-if-not
+                   (lambda (buffer)
+                     (let ((buffer-file (buffer-file-name buffer)))
+                       (and buffer-file
+                            (string-prefix-p project-root buffer-file))))
+                   (buffer-list)))
+         (compilation-buffer (get-buffer "*compilation*")))
+    (when compilation-buffer
+      (push compilation-buffer buffers))
+    (when buffers
+      (let ((selected (completing-read "Project Buffers: " (mapcar 'buffer-name buffers))))
+        (switch-to-buffer selected)))))
+
+(global-set-key (kbd "C-c b") 'my-vertico-buffer-list)
+(global-set-key (kbd "C-c p") 'my-vertico-project-buffer-list)
 
 (use-package treemacs
   :ensure t
