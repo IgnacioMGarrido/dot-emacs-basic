@@ -187,7 +187,7 @@
   :ensure t
   :config
   (evil-collection-init
-   (list 'dired 'ibuffer 'mu4e)))
+   (list 'dired 'ibuffer 'mu4e 'magit)))
 
 (use-package evil-surround
   :ensure t
@@ -229,8 +229,6 @@
 (use-package which-key
   :ensure t)
 
-;;; Interface tweaks
-
 ;; Set minibuffer on the top
 (setq vertico-posframe-poshandler #'posframe-poshandler-frame-top-center)
 
@@ -262,6 +260,7 @@
 (global-set-key (kbd "C-c b") 'my-vertico-buffer-list)
 (global-set-key (kbd "C-c p") 'my-vertico-project-buffer-list)
 
+;;; Treemacs
 (use-package treemacs
   :ensure t
   :defer t
@@ -278,6 +277,7 @@
   :ensure t
   :after (treemacs evil))
 
+;; Rainbow delimiters
 (use-package rainbow-delimiters
   :ensure t
   :hook ((lisp-mode . rainbow-delimiters-mode)
@@ -294,7 +294,12 @@
   ;;  '(rainbow-delimiters-depth-8-face ((t (:foreground "siennal")))))
   )
 
-;;Eglot
+;;;Magit
+
+(use-package magit
+  :ensure t)
+
+;;;Eglot
 
 (use-package eglot
   :ensure t
@@ -498,11 +503,6 @@
   (global-set-key (kbd "M-2") 'winum-select-window-2)
   (global-set-key (kbd "M-3") 'winum-select-window-3)
   (global-set-key (kbd "M-4") 'winum-select-window-4)
-  (global-set-key (kbd "M-5") 'winum-select-window-5)
-  (global-set-key (kbd "M-6") 'winum-select-window-6)
-  (global-set-key (kbd "M-7") 'winum-select-window-7)
-  (global-set-key (kbd "M-8") 'winum-select-window-8)
-  (global-set-key (kbd "M-9") 'winum-select-window-9)
   (winum-mode))
 
 (winner-mode t)
