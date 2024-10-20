@@ -6,6 +6,7 @@ autosave/
 auto-save-list/
 .cache/
 emacs-custom.el
+fonts/
 elpa/
 transient/
 eln-cache

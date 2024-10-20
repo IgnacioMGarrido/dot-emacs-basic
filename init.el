@@ -15,14 +15,29 @@
 
 ;;; THEMES
 ;;(load-theme 'modus-vivendi t)
+(setq custom-safe-themes t)
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-one))
+  (load-theme 'doom-city-lights))
+
+;; For this to work on windows we might need to install nerd fonts
+;; https://github.com/ryanoasis/nerd-fonts
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :config (column-number-mode 1)
+  :hook
+  (after-init . doom-modeline-mode)
+  :custom
+  (doom-modeline-height 30))
+
+(use-package all-the-icons
+  :ensure t)
 
 ;;; FONTS
 (defun nm/get-default-font()
-    "Consolas-13")
+    "Iosevka NF")
 (add-to-list 'default-frame-alist `(font . ,(nm/get-default-font)))
 (set-face-attribute 'default nil :height 110)
 
@@ -86,7 +101,7 @@
 
 (setq-default inhibit-splash-screen t
               make-backup-files nil
-              ;;tab-with 4
+              tab-width 4
               ;;indent-tabs-mode nil
               compilation-scroll-output t
               visible-bell t
@@ -188,6 +203,13 @@
   :ensure t
   :config
   (vertico-mode))
+
+(use-package vertico-posframe
+  :ensure t
+  :after vertico
+  :config (vertico-posframe-mode 1))
+
+(setq vertico-posframe-poshandler #'posframe-poshandler-frame-top-center)
 
 (use-package marginalia
   :ensure t
@@ -314,18 +336,115 @@
                 (tab-width (cdr (assq 'TabWidth clang-format-options))))
             (setq c-basic-offset (if (integerp indent-width) indent-width 4))
             (setq indent-tabs-mode (if use-tab t nil))
-            (setq tab-width (if (integerp tab-width) tab-width 4))
+            (setq tab-width 4);(if (integerp tab-width) tab-width 4))
             (setq c++-tab-always-indent 'complete)
             (message "Applied .clang-format settings: IndentWidth=%d, UseTab=%s, TabWidth=%d"
                      c-basic-offset
                      indent-tabs-mode
                      tab-width)))))))
+
+;;; Project Compilation
+
+(defun my-set-executable-path ()
+  "Prompt for the executable path and update it in .dir-locals.el."
+  (interactive)
+  (let* ((root (project-root (project-current t)))
+         (dir-locals-file (concat root ".dir-locals.el"))
+         (current-executable-path (if (boundp 'my-executable-path) my-executable-path "bin\\Release\\YourExecutable.exe"))
+         (executable-path (read-file-name "Path to executable: " root current-executable-path))
+         (dir-locals (if (file-exists-p dir-locals-file)
+                         (with-temp-buffer
+                           (insert-file-contents dir-locals-file)
+                           (read (current-buffer)))
+                       nil)))
+    ;; Update or add `my-executable-path` in the locals
+    (let ((new-locals (if (assoc 'nil dir-locals)
+                          (append (assoc-delete-all 'my-executable-path (cdr (assoc 'nil dir-locals)))
+                                  `((my-executable-path . ,executable-path)))
+                        `((nil . ((my-executable-path . ,executable-path)))))))
+      ;; Write the updated locals back to the file
+      (with-temp-file dir-locals-file
+        (insert (format "%S" new-locals))))
+    (message "Executable path saved.")))
+
+(defun my-load-executable-path ()
+  "Load the saved executable path from .dir-locals.el."
+  (let ((root (project-root (project-current t))))
+    (unless (boundp 'my-executable-path)
+      (hack-dir-local-variables))))
+
+(defun my-launch-vs-debugger ()
+  "Launch the Visual Studio debugger using the saved executable path."
+  (my-load-executable-path)
+  (let* ((root (project-root (project-current t)))
+         (solution-file (car (directory-files root nil "\\.sln$"))))
+    (when solution-file
+      (start-process "vs-debugger" "*vs-debugger*"
+                     "devenv.exe" (concat root solution-file) "/DebugExe" my-executable-path)
+      (message "Starting debugging in Visual Studio..."))))
+
+(defun my-compilation-finish (buffer msg)
+  "Check if the build was successful, and if so, launch the Visual Studio debugger."
+  (if (string-match "exited abnormally" msg)
+      (message "Compilation failed.")
+    (my-launch-vs-debugger)))
+
+(defun my-save-last-compile-command ()
+  "Saves the last compilation command in the .dir-locals.el of the project."
+  (let* ((root (project-root (project-current t)))
+         (dir-locals-file (concat root ".dir-locals.el"))
+         ;; Read the existing .dir-locals.el if it exists
+         (dir-locals (if (file-exists-p dir-locals-file)
+                         (with-temp-buffer
+                           (insert-file-contents dir-locals-file)
+                           (read (current-buffer)))
+                       nil)))
+    (when root
+      ;; Update or add `compile-command`
+      (let ((new-locals (if (assoc 'nil dir-locals)
+                            (append (assoc-delete-all 'compile-command (cdr (assoc 'nil dir-locals)))
+                                    `((compile-command . ,compile-command)))
+                          `((nil . ((compile-command . ,compile-command)))))))
+        ;; Write the updated locals back to .dir-locals.el
+        (with-temp-file dir-locals-file
+          (insert (format "%S" new-locals))))
+      (message "Compile command saved."))))
+;; TODO Fix the hook to launch visual studio
+(defun my-project-compile ()
+  "Compile the project, save the last compile command, and launch the debugger if successful."
+  (interactive)
+  ;;(my-load-executable-path)
+  (let ((default-directory (project-root (project-current t))))
+    ;; Ask for executable path if not set
+    ;; (unless (boundp 'my-executable-path)
+    ;;   (my-set-executable-path))
+    ;; ;; Set hook to save the compile command
+    ;; (add-hook 'compilation-finish-functions 'my-compilation-finish)
+    ;; Run the compile command
+    (call-interactively 'compile)
+    ;; Save the last compile command
+    (my-save-last-compile-command)
+	))
+
+;;; C++ hooks
 (add-hook 'c++-mode-hook 'set-clang-format-style-from-file)
 (add-hook 'c-mode-hook 'set-clang-format-style-from-file)
 (add-hook 'c++-mode-hook (lambda()
                         (setq c-set-style "k&r")
                         (setq electric-indent-mode -1)
                         (c-set-offset 'substatement-open 0)))
+(add-hook 'c++-mode-hook (lambda()
+			   (local-set-key (kbd "M-o") 'ff-find-other-file-other-window)
+			   (local-set-key (kbd "<f5>") 'my-project-compile)
+			   (local-set-key (kbd "<f3>") 'previous-error)
+			   (local-set-key (kbd "<f4>") 'next-error)
+			   ))
+
+(defun run-my-executable (exe-path)
+  "Run the executable specified by EXE-PATH."
+  (interactive "fExecutable path: ")
+  (start-process "my-executable" "*my-executable-buffer*" exe-path))
+
 ;;; AVY
 
 (use-package avy
