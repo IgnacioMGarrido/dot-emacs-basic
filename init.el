@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; eval: (local-set-key (kbd "C-c i") #'consult-outline); outline-regexp: ";;;"; -*-
 
 ;;; STARTUP
-(setq gc-cons-threshold (* 100 1000 1000))
+(setq gc-cons-threshold (* 100 1024 1024))
 (add-hook 'emacs-startup-hook
           #'(lambda ()
               (message "Startup in %s sec with %d garbage collections"
@@ -179,8 +179,8 @@
   (nm/fix-evil-hook treemacs treemacs "H" evil-window-top)
   (nm/fix-evil-hook compilation motion "TAB" compilation-next-error)
 
-  (define-key evil-normal-state-map (kbd "M-.") 'xref-find-definitions-other-window)
-  (define-key evil-normal-state-map (kbd "C-M-.") 'xref-find-definitions)
+  (define-key evil-normal-state-map (kbd "M-g") 'xref-find-definitions-other-window)
+  (define-key evil-normal-state-map (kbd "C-M-g") 'xref-find-definitions)
 )
 
 (use-package evil-collection
@@ -258,7 +258,7 @@
         (switch-to-buffer selected)))))
 
 (global-set-key (kbd "C-c b") 'my-vertico-buffer-list)
-(global-set-key (kbd "C-c p") 'my-vertico-project-buffer-list)
+(global-set-key (kbd "C-l") 'my-vertico-project-buffer-list)
 
 ;;; Treemacs
 (use-package treemacs
@@ -295,9 +295,9 @@
   )
 
 ;;;Magit
-
-(use-package magit
-  :ensure t)
+;; Not sure if I like it using the command line looks enough
+;; (use-package magit
+;;   :ensure t)
 
 ;;;Eglot
 
@@ -461,6 +461,11 @@
     (my-save-last-compile-command)
 	))
 
+;;; Prg Hooks
+(add-hook 'prog-mode-hook
+          (lambda ()
+            ;; Set keybinding for opening Imenu
+            (local-set-key (kbd "M-m") 'imenu)))
 ;;; C++ hooks
 (add-hook 'c++-mode-hook 'set-clang-format-style-from-file)
 (add-hook 'c-mode-hook 'set-clang-format-style-from-file)
@@ -554,7 +559,7 @@
 
 (global-set-key (kbd "C-<tab>") 'bs-cycle-next)
 (global-set-key (kbd "C-S-<tab>") 'bs-cycle-previous)
-(global-set-key (kbd "C-l") 'ibuffer)
+(global-set-key (kbd "C-c l") 'ibuffer)
 
 (global-set-key (kbd "C-q") 'kill-this-buffer)
 
