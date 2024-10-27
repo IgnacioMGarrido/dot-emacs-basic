@@ -13,6 +13,10 @@
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (package-initialize)
 
+;;; Unbind useless keybindings
+
+(global-unset-key (kbd "C-x C-c")) ;;Unbind close emacs
+
 ;;; THEMES
 ;;(load-theme 'modus-vivendi t)
 (setq custom-safe-themes t)
@@ -53,6 +57,8 @@
 (global-display-line-numbers-mode)
 (show-paren-mode 1)
 (tab-bar-mode -1)
+
+(global-auto-revert-mode 1)
 
 (defun nm/paste-from-clipboard()
   (interactive)
@@ -308,6 +314,12 @@
   (add-to-list 'eglot-server-programs '(c++-mode . ("clangd")))
   :hook (c++-mode . eglot-ensure))
 
+;;; Eldoc
+
+(use-package eldoc-box
+  :ensure t
+  :hook (eglot-managed-mode . eldoc-box-hover-at-point-mode))
+
 ;;; COMPANY MODE
 
 (use-package company
@@ -552,6 +564,49 @@
 (add-to-list 'auto-mode-alist '(".*\\(prj\\|premake\\).*\\.lua$" . indented-text-mode))
 
 (ido-mode)
+
+;;; Visual Studio Integration
+;; This will need some custom scripts.
+
+(defface my-breakpoint-face
+  '((t (:background "red")))
+  "Face for marking breakpoints."
+  :group 'my-custom-faces)
+
+(defvar my-breakpoint-fringe-marker
+  (propertize "*" 'display '(left-fringe right-triangle))
+  "Marker for the breakpoint in the fringe.")
+
+(defun my-set-breakpoint-overlay (line)
+  "Set a breakpoint overlay at the given LINE."
+  (let* ((overlay (make-overlay (line-beginning-position) (line-end-position))))
+    (overlay-put overlay 'face 'my-breakpoint-face)
+    overlay))
+
+(defun my-set-breakpoint-fringe (line)
+  "Add a fringe marker on the LINE."
+  (let ((fringe-overlay (make-overlay (line-beginning-position) (line-end-position))))
+    (overlay-put fringe-overlay 'before-string my-breakpoint-fringe-marker)
+    fringe-overlay))
+
+(defun my-set-breakpoint-current ()
+  "Set a breakpoint at the current line by highlighting the line and placing a marker in the fringe."
+  (interactive)
+  (let* ((file (buffer-file-name))
+         (line (line-number-at-pos))
+         (cmd (format "powershell -ExecutionPolicy Bypass -File ~/VSscripts/Set-Breakpoint.ps1 -filePath '%s' -lineNumber %d" file line)))
+    (if (and file line)
+        (progn
+          ;; Set the breakpoint in Visual Studio
+          (shell-command cmd)
+          ;; Visual indication in Emacs
+          (my-set-breakpoint-overlay line)
+          (my-set-breakpoint-fringe line)
+          (message "Breakpoint set at %s:%d" file line))
+      (message "Not in a valid file buffer."))))
+
+;; Optional: Define a key binding for setting breakpoints
+(define-key prog-mode-map (kbd "C-c b") 'my-set-breakpoint-current)
 
 ;;; Keybindings
 
