@@ -40,11 +40,15 @@
   :ensure t)
 
 ;;; FONTS
-(defun nm/get-default-font()
-    "Iosevka NF")
-;;  "JetBrainsMono")
-(add-to-list 'default-frame-alist `(font . ,(nm/get-default-font)))
-(set-face-attribute 'default nil :height 110)
+(defun nm/get-default-font ()
+  "Try find Iosevka."
+  (when (find-font (font-spec :name "Iosevka NF"))
+    "Iosevka NF"))
+
+(when-let ((font (nm/get-default-font)))
+	(add-to-list 'default-frame-alist `(font . ,(nm/get-default-font)))
+	(set-face-attribute 'default nil :height 110)
+  )
 
 ;;; Don't add custom setting here
 (setq custom-file "~/.emacs.d/emacs-custom.el")
